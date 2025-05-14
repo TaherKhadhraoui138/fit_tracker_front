@@ -1,0 +1,9 @@
+admin links
+/admin/dashboard
+/admin/users
+/admin/profile
+admin/products
+
+user links
+/user/profile
+/user/cart
