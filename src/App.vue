@@ -1,30 +1,34 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view />
+    <BannerDisplay />
+
+    <router-view />
+
+    <FooterDisplay />
 </template>
 
+<script>
+import BannerDisplay from './components/Header.vue';
+import FooterDisplay from './components/Footer.vue';
+
+export default {
+    name: 'App',
+    components: {
+        BannerDisplay,
+        FooterDisplay
+    }
+};
+</script>
+
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+/* Global Styles */
+:root {
+    --primary-hover-color: #3a36e1;
+    --primary-color: #007bff;
+    --secondary-color: #333;
+    --white: #fff;
+    padding: auto;
+    margin: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-nav {
-  padding: 30px;
-}
-
-nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-nav a.router-link-exact-active {
-  color: #42b983;
-}
 </style>
