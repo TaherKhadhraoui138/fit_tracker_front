@@ -244,6 +244,7 @@ export default {
   padding: 3rem 1rem;
   background-color: #f8fafc;
   min-height: 100vh;
+  margin-top: var(--Header-height,100px);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 

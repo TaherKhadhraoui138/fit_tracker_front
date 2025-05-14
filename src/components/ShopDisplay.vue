@@ -17,24 +17,14 @@
         <!-- Filters -->
         <div class="shop-controls mb-5">
           <div class="categories">
-            <button
-              v-for="category in categories"
-              :key="category"
-              class="category-filter"
-              :class="{ active: selectedCategory === category }"
-              @click="navigateToCategory(category)"
-              :aria-pressed="selectedCategory === category"
-            >
+            <button v-for="category in categories" :key="category" class="category-filter"
+              :class="{ active: selectedCategory === category }" @click="navigateToCategory(category)"
+              :aria-pressed="selectedCategory === category">
               {{ category }}
             </button>
           </div>
           <div class="sorting">
-            <select
-              class="sort-select"
-              v-model="sortOption"
-              @change="sortProducts"
-              aria-label="Sort products"
-            >
+            <select class="sort-select" v-model="sortOption" @change="sortProducts" aria-label="Sort products">
               <option value="low-high">Price: Low to High</option>
               <option value="high-low">Price: High to Low</option>
               <option value="newest">Newest First</option>
@@ -89,7 +79,7 @@ export default {
       if (this.sortOption === 'low-high') {
         filtered = filtered.slice().sort((a, b) => a.price - b.price);
       } else if (this.sortOption === 'high-low') {
-        filtered = filtered.slice().sort((a, b) => b.price - b.price);
+        filtered = filtered.slice().sort((a, b) => b.price - a.price);
       } else if (this.sortOption === 'newest') {
         filtered = filtered.slice().sort((a, b) => (b.id || 0) - (a.id || 0));
       } else if (this.sortOption === 'best-selling') {
@@ -128,6 +118,7 @@ export default {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #f8fafc;
   min-height: 100vh;
+  margin-top: 100px;
 }
 
 .container {
@@ -138,13 +129,13 @@ export default {
 
 /* Hero Section */
 .shop-hero {
-  background: linear-gradient(135deg, #3b82f6, #1e40af);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #ffffff;
-  padding: 5rem 0;
+  padding: 4rem 0;
   text-align: center;
-  border-bottom-left-radius: 24px;
-  border-bottom-right-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
 }
@@ -156,42 +147,43 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 10%, transparent 10%);
-  background-size: 20px 20px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" fill-opacity="1" d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,138.7C672,128,768,160,864,170.7C960,181,1056,171,1152,149.3C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+  background-size: cover;
   opacity: 0.3;
 }
 
 .shop-hero h1 {
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: 2.75rem;
+  font-weight: 700;
   color: #ffffff;
   margin-bottom: 0.75rem;
 }
 
 .shop-hero p {
-  font-size: 1.25rem;
-  color: #e2e8f0;
+  font-size: 1.2rem;
+  color: #f1f5f9;
   margin-bottom: 1.5rem;
 }
 
 .btn-outline-light {
-  border: 2px solid #ffffff;
-  padding: 0.8rem 2rem;
+  border: 2px solid #f1f5f9;
+  padding: 0.75rem 2rem;
   font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  font-weight: 500;
+  border-radius: 12px;
+  transition: all 0.5s ease;
 }
 
 .btn-outline-light:hover {
   background: #ffffff;
   color: #3b82f6;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Shop Controls */
 .shop-main {
-  padding: 3rem 0;
+  padding: 2.5rem 0;
 }
 
 .shop-controls {
@@ -200,13 +192,11 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   gap: 1.5rem;
-  margin-bottom: 2.5rem;
-  position: sticky;
-  top: 20px;
-  background: #f8fafc;
-  z-index: 10;
-  padding: 1rem 0;
-  border-radius: 12px;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 .categories {
@@ -216,66 +206,64 @@ export default {
 }
 
 .category-filter {
-  padding: 0.8rem 1.8rem;
-  background-color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  background-color: #f8fafc;
   color: #1a1a1a;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
+  border: none;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
 }
 
 .category-filter:hover {
-  background: #f1f5f9;
-  border-color: #3b82f6;
+  background: #e2e8f0;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .category-filter.active {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(to right, #667eea, #764ba2);
   color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .category-filter:focus {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .sorting {
-  min-width: 220px;
+  min-width: 200px;
 }
 
 .sort-select {
   width: 100%;
-  padding: 0.8rem;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.95rem;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border: none;
+  border-radius: 16px;
+  font-size: 0.9rem;
   color: #1a1a1a;
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .sort-select:hover {
-  border-color: #3b82f6;
+  background: #e2e8f0;
 }
 
 .sort-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 /* Product Grid */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.75rem;
 }
 
 .text-gray {
@@ -289,11 +277,11 @@ export default {
   }
 
   .shop-hero {
-    padding: 3.5rem 0;
+    padding: 3rem 0;
   }
 
   .shop-hero h1 {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
   }
 
   .shop-hero p {
@@ -303,7 +291,6 @@ export default {
   .shop-controls {
     flex-direction: column;
     align-items: stretch;
-    top: 10px;
   }
 
   .categories {
@@ -312,8 +299,8 @@ export default {
   }
 
   .category-filter {
-    padding: 0.7rem 1.5rem;
-    font-size: 0.9rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.85rem;
   }
 
   .sorting {
@@ -321,14 +308,14 @@ export default {
   }
 
   .product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1.5rem;
   }
 }
 
 @media (max-width: 576px) {
   .shop-hero {
-    padding: 2.5rem 0;
+    padding: 2rem 0;
   }
 
   .shop-hero h1 {

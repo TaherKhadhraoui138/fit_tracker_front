@@ -119,7 +119,7 @@ export default {
 <style scoped>
 .register-section {
     position: relative;
-    margin-top: var(--Header-height, 80px);
+    margin-top: var(--Header-height,150px);
 
     margin-bottom: 50px;
 }

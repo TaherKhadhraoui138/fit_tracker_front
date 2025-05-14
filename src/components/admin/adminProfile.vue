@@ -256,6 +256,7 @@ export default {
   background-color: #f8fafc;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-top: var(--Header-height,100px);
 }
 
 .admin-header h1 {

@@ -14,7 +14,7 @@
     </section>
 
     <!-- Pricing Plans -->
-    <section class="membership-plans py-6 position-relative">
+    <section class="membership-plans mt-5 py-6 position-relative">
         <div class="container">
             <div class="row g-4 justify-content-center">
                 <!-- Basic Plan -->
@@ -90,7 +90,7 @@
     </section>
 
     <!-- Benefits Section -->
-    <section class="membership-benefits py-6 bg-gradient-light">
+    <section class="membership-benefits mt-5 mb-5 py-6 bg-gradient-light">
     <div class="container">
         <h2 class="text-center mb-5 display-4 fw-bold position-relative z-2">Why Choose Us?</h2>
         <div class="row g-4">
@@ -154,6 +154,7 @@ export default {
     background: linear-gradient(135deg, rgba(10, 25, 47, 0.95) 0%, rgba(16, 37, 66, 0.95) 100%), 
                  center/cover;
     clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+    margin-top: var(--Header-height,80px);
 }
 
 .min-vh-60 {
