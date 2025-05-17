@@ -75,6 +75,8 @@
 </template>
 
 <script>
+import AuthServices from "@/services/AuthServices.js";
+
 export default {
     name: 'LoginPage',
     data() {
@@ -84,23 +86,26 @@ export default {
             rememberMe: false,
             showPassword: false,
             loading: false
-        }
+        };
     },
     methods: {
         async handleLogin() {
-            this.loading = true
+            this.loading = true;
             try {
-                // Add your login logic here
-                await new Promise(resolve => setTimeout(resolve, 1500))
-                alert('Login successful!')
+                await AuthServices.login({
+                    email: this.email,
+                    password: this.password
+                });
+                this.$emit('login-success');
+                this.$router.push({ name: "home" }); // Change route as needed
             } catch (error) {
-                alert('Login failed: ' + error.message)
+                alert('Login failed: ' + (error.response?.data?.message || error.message));
             } finally {
-                this.loading = false
+                this.loading = false;
             }
         }
     }
-}
+};
 </script>
 
 <style scoped>

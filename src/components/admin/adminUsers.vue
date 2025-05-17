@@ -5,9 +5,6 @@
         <h1 class="display-5 fw-bold text-dark">User Management</h1>
         <p class="text-secondary fs-5">View, edit, or manage gym memberships and user details</p>
       </div>
-      <button class="btn btn-primary add-user-btn" @click="addUser">
-        <i class="bi bi-plus-circle me-2"></i> Add New User
-      </button>
     </header>
 
     <div class="mb-4">
@@ -18,7 +15,6 @@
           class="form-control"
           placeholder="Search users by name or email..."
           v-model="searchQuery"
-          @input="filterUsers"
           aria-label="Search users"
         />
       </div>
@@ -38,21 +34,21 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="user in filteredUsers" :key="user.id" @click="selectUser(user)">
+          <tr v-for="user in filteredUsers" :key="user.id">
             <td>{{ user.id }}</td>
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
             <td>
-              <span class="membership-type" :class="user.membershipType.toLowerCase()">
-                {{ user.membershipType }}
+              <span class="membership-type" :class="user.membershipType ? user.membershipType.toLowerCase() : ''">
+                {{ user.membershipType || 'N/A' }}
               </span>
             </td>
-            <td>{{ user.startDate }}</td>
+            <td>{{ user.startDate || 'N/A' }}</td>
             <td :class="{ 'expiring-soon': user.remainingDays <= 7 }">
-              {{ user.remainingDays }} days
+              {{ user.remainingDays !== undefined ? user.remainingDays + ' days' : 'N/A' }}
             </td>
             <td class="action-buttons">
-              <button class="btn btn-warning btn-sm me-2" @click.stop="editUser(user)">
+              <button class="btn btn-warning btn-sm me-2" @click.stop="openEditModal(user)">
                 <i class="bi bi-pencil"></i>
               </button>
               <button class="btn btn-danger btn-sm" @click.stop="deleteUser(user)">
@@ -63,20 +59,62 @@
         </tbody>
       </table>
     </div>
+
+    
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" tabindex="-1" :class="{ show: showEditModal }" :style="{ display: showEditModal ? 'block' : 'none' }" @click.self="showEditModal = false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Edit User</h5>
+            <button type="button" class="btn-close" @click="showEditModal = false" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="updateUser">
+              <input type="hidden" v-model="editUser.id" />
+              <div class="mb-3">
+                <label for="editName" class="form-label">Name</label>
+                <input type="text" class="form-control" id="editName" v-model="editUser.name" required />
+              </div>
+              <div class="mb-3">
+                <label for="editEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="editEmail" v-model="editUser.email" required />
+              </div>
+              <div class="mb-3">
+                <label for="editMembershipType" class="form-label">Membership Type</label>
+                <select class="form-select" id="editMembershipType" v-model="editUser.membershipType">
+                  <option value="" disabled>Select Membership</option>
+                  <option v-for="type in membershipTypes" :key="type" :value="type">{{ type }}</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="editStartDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="editStartDate" v-model="editUser.startDate" />
+              </div>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+              <button type="button" class="btn btn-secondary ms-2" @click="showEditModal = false">Cancel</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import UserServices from "@/services/UserServices.js";
+
 export default {
   name: "AdminUsers",
   data() {
     return {
       searchQuery: "",
-      users: [
-        { id: 1, name: "John Doe", email: "john@example.com", membershipType: "Premium", startDate: "2025-01-01", remainingDays: 15 },
-        { id: 2, name: "Jane Smith", email: "jane@example.com", membershipType: "Basic", startDate: "2025-02-15", remainingDays: 5 },
-        { id: 3, name: "Mike Johnson", email: "mike@example.com", membershipType: "Standard", startDate: "2025-03-01", remainingDays: 30 }
-      ]
+      users: [],
+      loading: false,
+      showEditModal: false,
+      editUser: {},
+      // Remove newUser and showAddModal
     };
   },
   computed: {
@@ -90,26 +128,62 @@ export default {
       );
     }
   },
+  async created() {
+    await this.fetchUsers();
+  },
   methods: {
-    addUser() {
-      console.log("Add user clicked");
-      // Future: Open modal for adding user
+    async fetchUsers() {
+      this.loading = true;
+      try {
+        const data = await UserServices.getAllUsers();
+        this.users = Array.isArray(data) ? data : data.users || [];
+      } catch (error) {
+        alert("Failed to load users: " + (error.message || "Unknown error"));
+      } finally {
+        this.loading = false;
+      }
     },
-    editUser(user) {
-      console.log("Edit user:", user);
-      // Future: Open modal with user details
+    openEditModal(user) {
+      this.editUser = { ...user };
+      this.showEditModal = true;
     },
-    deleteUser(user) {
-      console.log("Delete user:", user);
-      // Future: Confirm deletion
+    async updateUser() {
+      try {
+        // Only send membershipType and startDate if they have values
+        const payload = {
+          name: this.editUser.name,
+          email: this.editUser.email,
+        };
+        if (this.editUser.membershipType) {
+          payload.membershipType = this.editUser.membershipType;
+        }
+        if (this.editUser.startDate) {
+          payload.startDate = this.editUser.startDate;
+        }
+        const response = await UserServices.updateUser(this.editUser.id, payload);
+        const index = this.users.findIndex(u => u.id === this.editUser.id);
+        if (index !== -1) {
+          this.users.splice(index, 1, { ...this.editUser, ...response.user });
+          await this.fetchUsers();
+        }
+        alert("User updated successfully.");
+        this.showEditModal = false;
+      } catch (error) {
+        alert("Failed to update user: " + (error.message || "Unknown error"));
+      }
     },
-    selectUser(user) {
-      console.log("Selected user:", user);
-      // Future: Highlight row or show details
-    },
-    filterUsers() {
-      console.log("Filtering users with query:", this.searchQuery);
+    async deleteUser(user) {
+      if (confirm(`Are you sure you want to delete ${user.name}?`)) {
+        try {
+          await UserServices.deleteUser(user.id);
+          this.users = this.users.filter(u => u.id !== user.id);
+          alert("User deleted successfully.");
+        } catch (error) {
+          alert("Failed to delete user: " + (error.message || "Unknown error"));
+        }
+      }
     }
+    // Remove createUser method
   }
 };
 </script>
@@ -316,6 +390,108 @@ export default {
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3);
 }
 
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  display: none;
+}
+
+.modal.show {
+  display: block;
+}
+
+.modal-dialog {
+  max-width: 500px;
+  margin: 1.75rem auto;
+}
+
+.modal-content {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  transition: color 0.3s ease;
+}
+
+.btn-close:hover {
+  color: #1a1a1a;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.form-control,
+.form-select {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  outline: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #1a1a1a;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #d1d5db;
+  transform: translateY(-1px);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
@@ -358,6 +534,10 @@ export default {
   .btn-sm {
     width: 100%;
     text-align: center;
+  }
+
+  .modal-dialog {
+    margin: 1rem;
   }
 }
 </style>

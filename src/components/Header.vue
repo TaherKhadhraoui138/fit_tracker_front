@@ -1,203 +1,197 @@
 <template>
-  <header class="header fixed-top" :class="{ 'header-scrolled': isScrolled }">
-    <div class="container">
-      <div class="header-grid">
-        <!-- Logo -->
-        <div class="logo">
-          <router-link to="/" class="text-decoration-none fs-1 fw-bold text-white" aria-label="PowerFit Home">
-            Power<span class="text-light">Fit</span>
-          </router-link>
-        </div>
-
-        <!-- Desktop Navigation -->
-        <nav class="nav-desktop ms-auto">
-          <ul class="nav align-items-center gap-5">
-            <li class="nav-item">
-              <router-link to="/" class="nav-link" active-class="active-link" aria-current="page">
-                Home
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link to="/membership" class="nav-link" active-class="active-link">
-                Membership
-              </router-link>
-            </li>
-            <li class="nav-item dropdown">
-              <a href="#" class="nav-link dropdown-toggle" id="shopDropdown" role="button" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                Shop
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="shopDropdown">
-                <li>
-                  <h6 class="dropdown-header text-primary">Shop Categories</h6>
-                </li>
-                <li>
-                  <hr class="dropdown-divider mx-2" />
-                </li>
-                <li>
-                  <router-link to="/shop/all" class="dropdown-item rounded">
-                    <i class="bi bi-grid me-2"></i>All
-                  </router-link>
-                </li>
-                <li>
-                  <hr class="dropdown-divider mx-2" />
-                </li>
-                <li>
-                  <router-link to="/shop/supplements" class="dropdown-item rounded">
-                    Supplements
-                  </router-link>
-                </li>
-                <li>
-                  <hr class="dropdown-divider mx-2" />
-                </li>
-                <li>
-                  <router-link to="/shop/accessories" class="dropdown-item rounded">
-                   Accessories
-                  </router-link>
-                </li>
-                <li>
-                  <hr class="dropdown-divider mx-2" />
-                </li>
-                <li>
-                  <router-link to="/shop/clothes" class="dropdown-item rounded">
-                      Clothes
-                  </router-link>
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </nav>
-
-        <!-- Actions -->
-        <div class="actions d-flex align-items-center gap-3">
-          <router-link to="/user/cart" class="cart-icon" aria-label="View Cart">
-            <i class="bi bi-cart3 fs-4 text-white"></i>
-          </router-link>
-          <a href="/login" class="btn btn-primary px-4 py-2 rounded-pill">Login</a>
-        </div>
-
-        <!-- Mobile Menu Toggle -->
-        <button class="nav-toggle d-none" @click="toggleMobileMenu" aria-label="Toggle navigation menu"
-          aria-expanded="false">
-          <i class="bi bi-list fs-3 text-white"></i>
-        </button>
-      </div>
-
-      <!-- Mobile Navigation -->
-      <nav class="nav-mobile" :class="{ 'nav-mobile-open': mobileMenuOpen }">
-        <ul class="nav flex-column p-4">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-custom-gradient shadow">
+    <div class="container-fluid">
+      <div class="navbar-left">
+        <router-link class="navbar-brand" to="/">
+          <i class="fas fa-dumbbell"></i> PowerFit
+        </router-link>
+        <ul class="navbar-nav">
           <li class="nav-item">
-            <router-link to="/" class="nav-link" active-class="active-link" @click="toggleMobileMenu">
-              Home
+            <router-link class="nav-link" to="/" :class="{ active: isActive('/') }">
+              <i class="bi bi-house-fill me-2"></i> Home
             </router-link>
           </li>
           <li class="nav-item">
-            <router-link to="/membership" class="nav-link" active-class="active-link" @click="toggleMobileMenu">
-              Membership
+            <router-link class="nav-link" to="/membership" :class="{ active: isActive('/membership') }">
+              <i class="bi bi-person-check-fill me-2"></i> Membership
             </router-link>
           </li>
-          <li class="nav-item">
-            <a href="#" class="nav-link" @click.prevent="toggleShopSubmenu" aria-expanded="false"
-              aria-controls="shopSubmenu">
-              Shop
-              <i class="bi bi-chevron-down ms-2"></i>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" id="shopDropdown" role="button" data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <i class="bi bi-shop-window me-2"></i> Shop
             </a>
-            <ul class="submenu" :class="{ 'submenu-open': shopSubmenuOpen }" id="shopSubmenu">
+            <ul class="dropdown-menu" aria-labelledby="shopDropdown">
               <li>
-                <router-link to="/shop/all" class="dropdown-item" @click="toggleMobileMenu">
-                  <i class="bi bi-grid me-2"></i>All
+                <router-link to="/shop/all" class="dropdown-item" :class="{ active: isActive('/shop/all') }">
+                  <i class="bi bi-grid-fill me-2"></i> All
                 </router-link>
               </li>
               <li>
-                <router-link to="/shop/supplements" class="dropdown-item" @click="toggleMobileMenu">
+                <router-link to="/shop/supplements" class="dropdown-item"
+                  :class="{ active: isActive('/shop/supplements') }">
                   Supplements
                 </router-link>
               </li>
               <li>
-                <router-link to="/shop/accessories" class="dropdown-item" @click="toggleMobileMenu">
-                  Accessories
+                <router-link to="/shop/accessories" class="dropdown-item"
+                  :class="{ active: isActive('/shop/accessories') }">
+                   Accessories
                 </router-link>
               </li>
               <li>
-                <router-link to="/shop/clothes" class="dropdown-item" @click="toggleMobileMenu">
+                <router-link to="/shop/clothes" class="dropdown-item" :class="{ active: isActive('/shop/clothes') }">
                   Clothes
                 </router-link>
               </li>
             </ul>
           </li>
+          <!-- Role-based Links -->
+          <template v-if="user">
+            <li class="nav-item" v-if="isAdmin">
+              <router-link class="nav-link" to="/admin/dashboard" :class="{ active: isActive('/admin/dashboard') }">
+                <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+              </router-link>
+            </li>
+            <li class="nav-item" v-if="isAdmin">
+              <router-link class="nav-link" to="/admin/users" :class="{ active: isActive('/admin/users') }">
+                <i class="bi bi-people-fill me-2"></i> Manage Users
+              </router-link>
+            </li>
+            <li class="nav-item" v-if="isAdmin">
+              <router-link class="nav-link" to="/admin/products" :class="{ active: isActive('/admin/products') }">
+                <i class="bi bi-box-seam-fill me-2"></i> Manage Products
+              </router-link>
+            </li>
+            <li class="nav-item" v-else-if="isUser">
+              <router-link class="nav-link" to="/user/cart" :class="{ active: isActive('/user/cart') }">
+                <i class="bi bi-cart-fill me-2"></i> My Cart
+              </router-link>
+            </li>
+          </template>
         </ul>
-      </nav>
+      </div>
+      <div class="navbar-right">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+          aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <template v-if="!user">
+              <li class="nav-item">
+                <router-link class="nav-link" to="/login" :class="{ active: isActive('/login') }">
+                  <i class="bi bi-box-arrow-in-right me-2"></i> Login
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/register" :class="{ active: isActive('/register') }">
+                  <i class="bi bi-person-plus-fill me-2"></i> Register
+                </router-link>
+              </li>
+            </template>
+            <template v-else>
+              <li class="nav-item">
+                <router-link class="nav-link" :to="profileLink" :class="{ active: isActive(profileLink) }">
+                  <i class="bi bi-person-circle me-2"></i> Profile
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" @click.prevent="confirmLogout">
+                  <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </a>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </div>
     </div>
-  </header>
+  </nav>
 </template>
 
 <script>
+import AuthServices from "@/services/AuthServices.js";
+
 export default {
-  name: 'BannerDisplay',
+  name: "NavBar",
   data() {
     return {
-      isScrolled: false,
-      mobileMenuOpen: false,
-      shopSubmenuOpen: false,
+      user: AuthServices.getUser(),
     };
   },
-  mounted() {
-    window.addEventListener('scroll', this.handleScroll);
+  computed: {
+    isAdmin() {
+      return this.user && this.user.role === "admin";
+    },
+    isUser() {
+      return this.user && this.user.role === "user";
+    },
+    profileLink() {
+      if (this.isAdmin) return "/admin/profile";
+      if (this.isUser) return "/user/profile";
+      return "/login";
+    },
   },
-  beforeUnmount() {
-    window.removeEventListener('scroll', this.handleScroll);
+  watch: {
+    user(newVal, oldVal) {
+      if (!oldVal && newVal) {
+        // User just logged in, refresh the page
+        window.location.reload();
+      }
+    },
   },
   methods: {
-    handleScroll() {
-      this.isScrolled = window.scrollY > 50;
+    isActive(route) {
+      return this.$route.path === route;
     },
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen;
-      document.body.style.overflow = this.mobileMenuOpen ? 'hidden' : 'auto';
+    confirmLogout() {
+      if (confirm("Are you sure you want to log out?")) {
+        this.logout();
+      }
     },
-    toggleShopSubmenu() {
-      this.shopSubmenuOpen = !this.shopSubmenuOpen;
+    logout() {
+      AuthServices.logout();
+      this.user = null;
+      this.$router.push("/login");
     },
+  },
+  created() {
+    window.addEventListener("storage", () => {
+      this.user = AuthServices.getUser();
+    });
   },
 };
 </script>
 
 <style scoped>
-.header {
-  background: linear-gradient(to right, #667eea, #764ba2);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+.navbar {
   padding: 1.5rem 0;
-  transition: all 0.4s ease-in-out;
+  transition: padding 0.4s ease-in-out;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+  background: linear-gradient(to right, #667eea, #764ba2);
 }
 
-.header-scrolled {
+.navbar-scrolled {
   padding: 1rem 0;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-.container {
-  max-width: 1400px;
-}
-
-.header-grid {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 2rem;
-}
-
-.logo a {
+.navbar-brand {
   font-size: clamp(2rem, 5vw, 2.5rem);
   font-weight: 800;
   color: #ffffff;
   text-decoration: none;
   position: relative;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
 }
 
-.logo a::after {
+.navbar-brand::after {
   content: '';
   position: absolute;
   bottom: -4px;
@@ -210,46 +204,27 @@ export default {
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.logo a:hover {
+.navbar-brand:hover {
   transform: translateY(-2px);
 }
 
-.logo a:hover::after {
+.navbar-brand:hover::after {
   transform: scaleX(1);
   transform-origin: left;
 }
 
-.logo a span {
-  color: #f1f5f9;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.logo a span:hover {
-  animation: textPop 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes textPop {
-
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.15);
-  }
-
-  75% {
-    transform: scale(0.95);
-  }
-}
-
-.nav-desktop {
+.navbar-left,
+.navbar-right {
   display: flex;
+  align-items: center;
 }
 
-.nav {
-  gap: 2.5rem;
+.navbar-left {
+  gap: 2rem;
+}
+
+.navbar-right {
+  margin-left: auto;
 }
 
 .nav-link {
@@ -257,13 +232,19 @@ export default {
   font-weight: 500;
   color: #f1f5f9;
   position: relative;
-  transition: color 0.4s ease, transform 0.4s ease;
+  transition: all 0.4s ease;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
 }
 
 .nav-link:hover,
-.nav-link.active-link {
+.nav-link.active {
   color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .nav-link::after {
@@ -280,7 +261,7 @@ export default {
 }
 
 .nav-link:hover::after,
-.nav-link.active-link::after {
+.nav-link.active::after {
   transform: scaleX(1);
   transform-origin: left;
 }
@@ -294,216 +275,100 @@ export default {
   min-width: 260px;
   padding: 1rem 0;
   border: none;
-  border-radius: 20px;
+  border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  background: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(245, 245, 245, 0.95));
   backdrop-filter: blur(12px);
   transition: all 0.4s ease;
   margin-top: 0.75rem;
 }
 
 .dropdown-item {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 500;
   color: #1a1a1a;
   padding: 0.75rem 1.5rem;
   display: flex;
   align-items: center;
   transition: all 0.3s ease;
+  border-radius: 8px;
 }
 
 .dropdown-item:hover,
-.dropdown-item:focus {
+.dropdown-item:focus,
+.dropdown-item.active {
   background: linear-gradient(to right, #e0f2fe, #dbeafe);
   color: #3b82f6;
-  border-radius: 12px;
+  transform: translateX(5px);
 }
 
-.dropdown-divider {
-  border-color: #e2e8f0;
-  margin: 0.5rem 1rem;
-}
-
-.dropdown-header {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #3b82f6;
-  padding: 0.75rem 1.5rem;
-}
-
-.btn-primary {
-  background: linear-gradient(to right, #667eea, #764ba2);
+.navbar-toggler {
   border: none;
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 0.75rem 2rem;
+  padding: 0.5rem 0.75rem;
   transition: all 0.4s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.btn-primary:hover {
-  background: linear-gradient(to right, #5b67d8, #6b3e99);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.btn-primary:focus {
+.navbar-toggler:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
-.cart-icon {
-  display: flex;
-  align-items: center;
-  transition: all 0.4s ease;
-}
-
-.cart-icon:hover {
-  transform: translateY(-2px);
-  color: #ffffff;
-}
-
-.nav-toggle {
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  cursor: pointer;
-}
-
-.nav-mobile {
-  position: fixed;
-  top: 0;
-  right: -100%;
-  width: 280px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
-  transition: right 0.4s ease;
-  z-index: 1000;
-}
-
-.nav-mobile-open {
-  right: 0;
-}
-
-.nav-mobile .nav {
-  gap: 1rem;
-}
-
-.nav-mobile .nav-link {
-  font-size: 1.2rem;
-  color: #1a1a1a;
-  padding: 0.75rem 1.5rem;
-}
-
-.nav-mobile .nav-link:hover,
-.nav-mobile .nav-link.active-link {
-  color: #3b82f6;
-  background: #f8fafc;
-  border-radius: 12px;
-}
-
-.submenu {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.4s ease;
-  padding-left: 1.5rem;
-}
-
-.submenu-open {
-  max-height: 300px;
-}
-
-.submenu .dropdown-item {
-  font-size: 1rem;
-  color: #1a1a1a;
-  padding: 0.5rem 1rem;
-}
-
-/* Responsive Design */
 @media (max-width: 992px) {
-  .header-grid {
-    gap: 1.5rem;
-  }
-
-  .nav-desktop {
-    gap: 2rem;
+  .navbar {
+    padding: 1rem 0;
   }
 
   .nav-link {
     font-size: 1rem;
+    padding: 0.5rem 1rem;
   }
 
-  .btn-primary {
-    padding: 0.65rem 1.5rem;
-    font-size: 0.95rem;
+  .navbar-left,
+  .navbar-right {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .navbar-right {
+    margin-left: 0;
+  }
+
+  .navbar-nav {
+    width: 100%;
+  }
+
+  .nav-link {
+    justify-content: center;
   }
 }
 
 @media (max-width: 768px) {
-  .header {
-    padding: 1rem 0;
-  }
-
-  .header-scrolled {
+  .navbar {
     padding: 0.75rem 0;
   }
 
-  .nav-desktop {
-    display: none;
-  }
-
-  .nav-toggle {
-    display: block;
-  }
-
-  .logo a {
+  .navbar-brand {
     font-size: clamp(1.75rem, 4vw, 2rem);
   }
 
-  .actions {
-    gap: 1.5rem;
-  }
-
-  .btn-primary {
-    padding: 0.6rem 1.25rem;
-    font-size: 0.9rem;
-  }
-
   .dropdown-menu {
-    min-width: 220px;
+    min-width: 200px;
   }
 }
 
 @media (max-width: 576px) {
-  .container {
-    padding: 0 1rem;
+  .container-fluid {
+    padding: 0 0.5rem;
   }
 
-  .header-grid {
-    grid-template-columns: auto auto;
-    justify-content: space-between;
-  }
-
-  .actions {
-    display: none;
-  }
-
-  .nav-mobile .nav-link {
-    font-size: 1.1rem;
-  }
-
-  .nav-mobile {
-    width: 100%;
+  .navbar-brand {
+    font-size: 1.5rem;
   }
 }
 
 /* Accessibility */
 .nav-link:focus,
-.dropdown-toggle:focus,
-.cart-icon:focus,
-.nav-toggle:focus {
+.dropdown-toggle:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
   border-radius: 4px;
@@ -513,5 +378,12 @@ export default {
   outline: none;
   background: linear-gradient(to right, #e0f2fe, #dbeafe);
   color: #3b82f6;
+}
+
+
+
+.fas.fa-dumbbell {
+  color: #ffffff;
+  margin-right: 1rem;
 }
 </style>

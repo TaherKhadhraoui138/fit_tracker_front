@@ -231,7 +231,7 @@ export default {
       alert('Cart cleared successfully!');
     },
     goBack() {
-      this.$router.go(-1);
+      this.$router.push('/shop/all');
     }
   }
 };

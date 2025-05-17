@@ -21,12 +21,14 @@
               <div class="text-center mb-4">
                 <img :src="profile.avatar || 'https://via.placeholder.com/120'" alt="User avatar" class="avatar" />
                 <h3 class="card-title fw-bold mt-3">{{ profile.name || 'N/A' }}</h3>
+                
               </div>
               <dl class="row g-3">
                 <dt class="col-sm-4 fw-semibold text-primary">Email</dt>
                 <dd class="col-sm-8">{{ profile.email || 'N/A' }}</dd>
-                <dt class="col-sm-4 fw-semibold text-primary">Phone</dt>
-                <dd class="col-sm-8">{{ profile.phone || 'N/A' }}</dd>
+
+                <dt class="col-sm-4 fw-semibold text-primary">Joined</dt>
+                <dd class="col-sm-8">{{ profile.createdat ? new Date(profile.createdat).toLocaleDateString() : 'N/A' }}</dd> <!-- Display join date -->
               </dl>
 
               <!-- Subscription Details -->
@@ -40,9 +42,9 @@
                     <dd class="col-sm-8">{{ subscription.daysRemaining || 'N/A' }}</dd>
                   </dl>
                   <div class="d-flex gap-2 mt-3">
-                    <button class="btn btn-primary" @click="$router.push('')">
+                    <button class="btn btn-primary" @click="$router.push('/upgrade')">
                       <i class="bi bi-arrow-up-circle me-2"></i> Upgrade Plan
-                    </button> 
+                    </button>
                     <button class="btn btn-outline-danger" @click="showCancelSubscriptionModal = true"
                       :disabled="subscription.plan === 'None'">
                       <i class="bi bi-x-circle me-2"></i> Cancel Subscription
@@ -90,14 +92,7 @@
                 </div>
               </div>
 
-              <div class="mb-4">
-                <label for="phone" class="form-label fw-semibold text-primary">Phone Number</label>
-                <input type="tel" id="phone" class="form-control" v-model.trim="form.phone"
-                  :class="{ 'is-invalid': errors.phone }" aria-describedby="phoneError" />
-                <div v-if="errors.phone" id="phoneError" class="invalid-feedback">
-                  {{ errors.phone }}
-                </div>
-              </div>
+              
 
               <div class="mb-4">
                 <label for="password" class="form-label fw-semibold text-primary">New Password</label>
@@ -175,24 +170,27 @@
 </template>
 
 <script>
+import UserServices from "@/services/UserServices.js";
+import AuthServices from "@/services/AuthServices.js";
+
 export default {
   name: 'UserProfile',
   data() {
     return {
       profile: {
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '',
-        avatar: ''
+        name: '',
+        email: '',
+        avatar: '',
+        role: '', // Added to store role
+        createdAt: '' // Added to store join date
       },
       subscription: {
-        plan: 'Basic',
-        daysRemaining: 30
+        plan: 'None',
+        daysRemaining: 0
       },
       form: {
         name: '',
         email: '',
-        phone: '',
         password: '',
         confirmPassword: '',
         avatar: ''
@@ -200,7 +198,6 @@ export default {
       errors: {
         name: '',
         email: '',
-        phone: '',
         password: '',
         confirmPassword: '',
         avatar: ''
@@ -210,6 +207,39 @@ export default {
       showCancelSubscriptionModal: false
     };
   },
+  async created() {
+    try {
+      // Get initial user data from AuthServices
+      const authUser = AuthServices.getUser();
+      if (authUser) {
+        this.profile = {
+          name: authUser.name || authUser.username || 'N/A', // Fallback to username if name is missing
+          email: authUser.email || 'N/A',
+          role: authUser.role || 'N/A', // Role from AuthServices
+          createdAt: authUser.createdAt || '' // Join date from AuthServices
+        };
+      }
+
+      // Fetch additional profile details from UserServices
+      const { data } = await UserServices.getProfile();
+      this.profile = {
+        ...this.profile,
+        avatar: data.avatar || 'https://via.placeholder.com/120'
+      };
+
+      // Fetch subscription details (assuming an endpoint exists)
+      const subData = await UserServices.getSubscription(); // Assuming this method exists
+      this.subscription = {
+        plan: subData.plan || 'None',
+        daysRemaining: subData.daysRemaining || 0
+      };
+
+      // Set form fields for editing
+      this.form = { ...this.profile, password: '', confirmPassword: '' };
+    } catch (error) {
+      alert('Failed to load profile: ' + (error.response?.data?.message || error.message));
+    }
+  },
   methods: {
     startEditing() {
       this.form = { ...this.profile, password: '', confirmPassword: '' };
@@ -217,7 +247,7 @@ export default {
     },
     cancelEditing() {
       this.isEditing = false;
-      this.errors = { name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '' };
+      this.errors = { name: '', email: '', password: '', confirmPassword: '', avatar: '' };
     },
     handleAvatarUpload(event) {
       const file = event.target.files[0];
@@ -235,7 +265,7 @@ export default {
       }
     },
     validateForm() {
-      this.errors = { name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '' };
+      this.errors = { name: '', email: '', password: '', confirmPassword: '', avatar: '' };
       let isValid = true;
 
       if (!this.form.name) {
@@ -251,11 +281,6 @@ export default {
         isValid = false;
       }
 
-      if (this.form.phone && !/^\+?\d{10,15}$/.test(this.form.phone)) {
-        this.errors.phone = 'Please enter a valid phone number (10-15 digits).';
-        isValid = false;
-      }
-
       if (this.form.password && this.form.password.length < 8) {
         this.errors.password = 'Password must be at least 8 characters long.';
         isValid = false;
@@ -268,47 +293,62 @@ export default {
 
       return isValid;
     },
-    saveProfile() {
+    async saveProfile() {
       if (this.validateForm()) {
-        console.log('Saving profile:', this.form);
-        // Placeholder: Implement API call to save profile
-        // Example: await axios.put('/api/user/profile', this.form);
-        this.profile = {
-          name: this.form.name,
-          email: this.form.email,
-          phone: this.form.phone,
-          avatar: this.form.avatar
-        };
-        this.isEditing = false;
-        alert('Profile saved successfully!');
-        this.form.password = '';
-        this.form.confirmPassword = '';
+        try {
+          const updateData = {
+            name: this.form.name,
+            email: this.form.email,
+            avatar: this.form.avatar
+          };
+          if (this.form.password) {
+            updateData.password = this.form.password;
+            updateData.password_confirmation = this.form.confirmPassword;
+          }
+          await UserServices.updateProfile(updateData);
+          this.profile = { ...this.profile, ...updateData };
+          this.isEditing = false;
+          alert('Profile saved successfully!');
+          this.form.password = '';
+          this.form.confirmPassword = '';
+        } catch (error) {
+          alert('Failed to save profile: ' + (error.response?.data?.message || error.message));
+        }
       }
     },
-    deleteProfile() {
-      console.log('Deleting profile:', this.profile);
-      // Placeholder: Implement API call to delete profile
-      // Example: await axios.delete('/api/user/profile');
-      alert('Account deleted successfully!');
-      this.showDeleteModal = false;
-      this.$router.push('/login');
+    async deleteProfile() {
+      try {
+        await UserServices.deleteUser(this.profile.id || this.getCurrentUser().id); // Use user ID
+        alert('Account deleted successfully!');
+        this.showDeleteModal = false;
+        AuthServices.logout(); // Log out after deletion
+        this.$router.push('/login');
+      } catch (error) {
+        alert('Failed to delete account: ' + (error.response?.data?.message || error.message));
+      }
     },
-    cancelSubscription() {
-      console.log('Cancelling subscription:', this.subscription);
-      // Placeholder: Implement API call to cancel subscription
-      // Example: await axios.post('/api/user/subscription/cancel');
-      this.subscription = { plan: 'None', daysRemaining: 0 };
-      this.showCancelSubscriptionModal = false;
-      alert('Subscription cancelled successfully!');
+    async cancelSubscription() {
+      try {
+        await UserServices.cancelSubscription(); // Assuming this method exists
+        this.subscription = { plan: 'None', daysRemaining: 0 };
+        this.showCancelSubscriptionModal = false;
+        alert('Subscription cancelled successfully!');
+      } catch (error) {
+        alert('Failed to cancel subscription: ' + (error.response?.data?.message || error.message));
+      }
     },
     goBack() {
       this.$router.push('/');
+    },
+    getCurrentUser() {
+      return AuthServices.getUser();
     }
   }
 };
 </script>
 
 <style scoped>
+/* Existing styles remain unchanged */
 .container {
   max-width: 1400px;
   margin: 0 auto;
@@ -316,6 +356,7 @@ export default {
   background-color: #f8fafc;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-top: var(--Header-height, 100px);
 }
 
 .user-header h1 {

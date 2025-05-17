@@ -1,11 +1,20 @@
 <template>
   <div class="container py-5">
-    <div v-if="!displayProduct" class="row justify-content-center">
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3 text-muted">Loading product details...</p>
+    </div>
+
+    <!-- Error / Not Found State -->
+    <div v-else-if="error" class="row justify-content-center">
       <div class="col-lg-8">
-        <div class="card h-100 text-center">
+        <div class="card h-100 text-center shadow-sm">
           <div class="card-body">
             <i class="bi bi-exclamation-circle display-1 text-danger mb-4"></i>
-            <p class="text-danger fs-5 mb-4">Product not found.</p>
+            <p class="text-danger fs-5 mb-4">{{ error }}</p>
             <button class="btn btn-secondary" @click="goBack">
               <i class="bi bi-arrow-left me-2"></i> Back to Shop
             </button>
@@ -13,125 +22,267 @@
         </div>
       </div>
     </div>
-    <template v-else>
+
+    <!-- Product Display -->
+    <div v-else>
       <header class="product-header mb-5">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <!--  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
           <div>
-            <h1 class="display-4 fw-bold text-dark">{{ displayProduct.name }}</h1>
-            <p class="text-gray fs-5">{{ productType }} Details</p>
+            <h1 class="display-5 fw-bold text-dark">{{ displayProduct.name }}</h1>
+            <p class="text-gray fs-5">{{ productType }}</p>
           </div>
-          <button class="btn btn-secondary" @click="goBack">
-            <i class="bi bi-arrow-left me-2"></i> Back
-          </button>
-        </div>
+          
+        </div> -->
+        <button class="btn btn-outline-secondary" @click="goBack">
+          <i class="bi bi-arrow-left me-2"></i> Back
+        </button>
       </header>
+
       <div class="row justify-content-center">
         <div class="col-lg-10">
-          <div class="card h-100">
+          <div class="card product-detail-card mb-5">
             <div class="card-body">
               <div class="row g-4">
-                <div class="col-md-4">
-                  <img
-                    :src="displayProduct.image || 'https://via.placeholder.com/300'"
-                    :alt="displayProduct.name"
-                    class="product-image img-fluid rounded"
-                  />
+                <!-- Product Image Column -->
+                <div class="col-md-5">
+                  <div class="image-container">
+                    <img :src="displayProduct.image" :alt="displayProduct.name"
+                      class="product-image img-fluid rounded-3 shadow-lg" />
+                    <div v-if="displayProduct.onSale" class="sale-badge">
+                      Save {{ calculateDiscount() }}%
+                    </div>
+                  </div>
                 </div>
-                <div class="col-md-8">
-                  <div class="d-flex align-items-center gap-3 mb-3">
-                    <h3 class="card-title fw-bold mb-0">{{ displayProduct.name }}</h3>
-                    <span v-if="displayProduct.onSale" class="badge bg-success">On Sale</span>
+
+                <!-- Product Info Column -->
+                <div class="col-md-7">
+                  <div class="product-meta">
+                    <h1 class="product-title">{{ displayProduct.name }}</h1>
+                    <div class="price-section">
+                      <span class="current-price">
+                        {{
+                          displayProduct.price !== undefined && displayProduct.price !== null &&
+                            !isNaN(Number(displayProduct.price))
+                            ? `$${Number(displayProduct.price).toFixed(2)}`
+                            : 'N/A'
+                        }}
+                      </span>
+                      <span
+                        v-if="displayProduct.onSale && displayProduct.originalPrice !== undefined && displayProduct.originalPrice !== null && !isNaN(Number(displayProduct.originalPrice))"
+                        class="original-price">
+                        ${{ Number(displayProduct.originalPrice).toFixed(2) }}
+                      </span>
+                    </div>
                   </div>
-                  <div class="mb-3">
-                    <span class="fs-4 fw-bold text-primary">${{ displayProduct.price.toFixed(2) }}</span>
-                    <span v-if="displayProduct.onSale" class="text-gray text-decoration-line-through ms-2">
-                      ${{ displayProduct.originalPrice.toFixed(2) }}
-                    </span>
+                  <div class="product-actions mt-5">
+                    <button class="btn btn-primary btn-add-to-cart" @click="addToCart">
+                      <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                    </button>
                   </div>
-                  <div class="product-details mb-4">
-                    <dl class="row g-3">
-                      <template v-if="productType === 'Supplements'">
-                        <SupplementsDetails :product="displayProduct" />
-                      </template>
-                      <template v-if="productType === 'Clothes'">
-                        <ClothesDetails :product="displayProduct" />
-                      </template>
-                      <template v-if="productType === 'Accessories'">
-                        <AccessoriesDetails :product="displayProduct" />
-                      </template>
-                    </dl>
+                  <br>
+
+                  <div class="product-description mb-5">
+                    <h3 class="section-heading">Description</h3>
+                    <p class="description-text">
+                      {{ displayProduct.description || 'No description available' }}
+                    </p>
                   </div>
-                  <button class="btn btn-primary" @click="addToCart">
-                    <i class="bi bi-cart-plus me-2"></i> Add to Cart
-                  </button>
+
+                  <div class="product-specifications">
+                    <h3 class="section-heading">Specifications</h3>
+
+                    <!-- Common Specifications -->
+                    <div class="spec-grid">
+                      <div class="spec-item">
+                        <span class="spec-label">Category</span>
+                        <span class="spec-value">{{ productType }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Supplement Specific -->
+                    <template v-if="productType === 'Supplement'">
+                      <div class="spec-grid">
+                        <div class="spec-item">
+                          <span class="spec-label">Flavor</span>
+                          <span class="spec-value">
+                            {{ displayProduct.supplement?.flavor || 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Weight</span>
+                          <span class="spec-value">
+                            {{ displayProduct.supplement?.weight ? `${displayProduct.supplement.weight} lbs` : 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Form</span>
+                          <span class="spec-value">
+                            {{ displayProduct.supplement?.form || 'N/A' }}
+                          </span>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Clothing Specific -->
+                    <template v-if="productType === 'Clothing'">
+                      <div class="spec-grid">
+                        <div class="spec-item">
+                          <span class="spec-label">Size</span>
+                          <span class="spec-value">
+                            {{ displayProduct.clothing?.size || 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Color</span>
+                          <span class="spec-value">
+                            {{ displayProduct.clothing?.color || 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Gender</span>
+                          <span class="spec-value">
+                            {{ displayProduct.clothing?.gender || 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Material</span>
+                          <span class="spec-value">
+                            {{ displayProduct.clothing?.material || 'N/A' }}
+                          </span>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Accessory Specific -->
+                    <template v-if="productType === 'Accessory'">
+                      <div class="spec-grid">
+                        <div class="spec-item">
+                          <span class="spec-label">Material</span>
+                          <span class="spec-value">
+                            {{ displayProduct.accessory?.material || 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Brand</span>
+                          <span class="spec-value">
+                            {{ displayProduct.accessory?.brand || 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Size</span>
+                          <span class="spec-value">
+                            {{ displayProduct.accessory?.size || 'N/A' }}
+                          </span>
+                        </div>
+                        <div class="spec-item">
+                          <span class="spec-label">Weight</span>
+                          <span class="spec-value">
+                            {{ displayProduct.accessory?.weight ? `${displayProduct.accessory.weight} lbs` : 'N/A' }}
+                          </span>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </template>
+
+      <ReviewSection :productId="displayProduct.id" />
+    </div>
   </div>
 </template>
 
 <script>
-import SupplementsDetails from "./SupplementsDetails.vue";
-import ClothesDetails from "./ClothesDetails.vue";
-import AccessoriesDetails from "./AccessoriesDetails.vue";
+import ProductServices from '@/services/ProductServices';
+import ReviewSection from "./ReviewSection.vue";
 
 export default {
   name: "ProductDetails",
-  components: {
-    SupplementsDetails,
-    ClothesDetails,
-    AccessoriesDetails,
-  },
-  props: {
-    product: {
-      type: Object,
-      default: null,
-    },
-    productType: {
-      type: String,
-      required: true,
-    },
-  },
+  components: { ReviewSection },
   data() {
     return {
-      localProduct: null,
+      loading: true,
+      displayProduct: null,
+      error: null
     };
   },
-  created() {
-    const id = Number(this.$route.params.id);
-    const products = [
-      { id: 1, name: 'Gold Standard Whey', price: 49.99, category: 'Supplements', flavor: 'Chocolate', weight: 1.5, form: 'Powder', originalPrice: 59.99, onSale: true, image: '/images/protein.jpg' },
-      { id: 2, name: 'Resistance Bands', price: 19.99, category: 'Accessories', material: 'Rubber', brand: 'FitPro', size: 'Medium', weight: 0.2, originalPrice: 24.99, onSale: true, image: '/images/bands.jpg' },
-      { id: 3, name: 'Gym T-Shirt', price: 24.99, category: 'Clothes', size: 'M', color: 'Black', gender: 'Unisex', material: 'Cotton', originalPrice: 29.99, onSale: false, image: '/images/tshirt.jpg' },
-      { id: 4, name: 'Creatine', price: 29.99, category: 'Supplements', flavor: 'Unflavored', weight: 0.5, form: 'Powder', originalPrice: 34.99, onSale: true, image: '/images/creatine.jpg' },
-      { id: 5, name: 'Water Bottle', price: 12.99, category: 'Accessories', material: 'Plastic', brand: 'Hydro', size: 'Large', weight: 0.3, originalPrice: 15.99, onSale: true, image: '/images/bottle.jpg' }
-    ];
-    this.localProduct = products.find((p) => p.id === id) || null;
-    if (!this.localProduct) {
-      console.error("Product not found:", id);
-      this.$router.push("/shop/all");
+  computed: {
+    productType() {
+      if (!this.displayProduct?.category) return 'N/A';
+      return this.displayProduct.category.charAt(0).toUpperCase() + this.displayProduct.category.slice(1);
     }
   },
-  computed: {
-    displayProduct() {
-      return this.localProduct || this.product;
-    },
+  async created() {
+    try {
+      const productId = Number(this.$route.params.id);
+      const response = await ProductServices.getProductById(productId);
+
+      if (!response) {
+        this.$router.push("/shop/all");
+        return;
+      }
+
+      const productData = {
+        ...response,
+        supplement: response.supplement || {},
+        clothing: response.clothing || {},
+        accessory: response.accessory || {}
+      };
+
+      this.displayProduct = {
+        ...productData,
+        flavor: productData.supplement?.flavor || 'N/A',
+        weight: productData.supplement?.weight || productData.accessory?.weight || 'N/A',
+        form: productData.supplement?.form || 'N/A',
+        size: productData.clothing?.size || productData.accessory?.size || 'N/A',
+        color: productData.clothing?.color || 'N/A',
+        gender: productData.clothing?.gender || 'N/A',
+        material: productData.clothing?.material || productData.accessory?.material || 'N/A',
+        brand: productData.accessory?.brand || 'N/A',
+        onSale: productData.originalPrice && productData.originalPrice > productData.price,
+        image: productData.image || this.getDefaultImage(productData.category),
+        description: productData.description || 'No description available'
+      };
+
+    } catch (error) {
+      this.error = error.message;
+      console.error("Product load error:", error);
+      this.$router.push("/shop/all");
+    } finally {
+      this.loading = false;
+    }
   },
   methods: {
-    goBack() {
-      this.$router.go(-1);
+    getDefaultImage(category) {
+      const images = {
+        supplements: '/images/default-supplement.jpg',
+        clothes: '/images/default-clothing.jpg',
+        accessories: '/images/default-accessory.jpg'
+      };
+      return images[category?.toLowerCase()] || '/images/default-product.jpg';
+    },
+    calculateDiscount() {
+      const { originalPrice, price } = this.displayProduct;
+      if (!originalPrice || !price || isNaN(originalPrice) || isNaN(price)) return 'N/A';
+      return Math.round(((originalPrice - price) / originalPrice) * 100);
     },
     addToCart() {
-      console.log('Adding to cart:', this.displayProduct);
-      // Placeholder: Implement API call to add to cart
-      // Example: await axios.post('/api/cart', { productId: this.displayProduct.id, quantity: 1 });
-      alert(`${this.displayProduct.name} added to cart!`);
+      this.$store.dispatch('cart/addToCart', {
+        product: this.displayProduct,
+        quantity: 1
+      });
+      this.$toast.success(`${this.displayProduct.name} added to cart!`, {
+        position: "top-right",
+        timeout: 3000
+      });
     },
-  },
+    goBack() {
+      this.$router.go(-1);
+    }
+  }
 };
 </script>
 
@@ -140,183 +291,259 @@ export default {
   max-width: 1400px;
   margin: 0 auto;
   padding: 3rem 1rem;
-  background-color: #f8fafc;
+  background-color: #f9fafb;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-top: 100px;
 }
 
-.product-header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1a1a1a;
+.product-detail-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease;
 }
 
-.product-header p {
-  font-size: 1.125rem;
-  color: #6b7280;
+.product-detail-card:hover {
+  transform: translateY(-5px);
 }
 
-.card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-}
-
-.card-body {
-  padding: 2rem;
-}
-
-.card-title {
-  font-size: 1.75rem;
-  color: #1a1a1a;
+.image-container {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  padding: 1rem;
 }
 
 .product-image {
-  max-width: 100%;
-  height: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  object-fit: cover;
+  height: 400px;
+  object-fit: contain;
+  transition: transform 0.3s ease;
 }
 
-.product-details dt {
+.sale-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #10b981;
+  color: white;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
   font-weight: 600;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.product-meta {
+  margin-bottom: 2rem;
+}
+
+.product-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.price-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.current-price {
+  font-size: 2rem;
+  font-weight: 700;
   color: #3b82f6;
-  font-size: 0.95rem;
 }
 
-.product-details dd {
-  color: #1f2937;
-  font-size: 0.95rem;
-  margin-bottom: 0;
+.original-price {
+  font-size: 1.25rem;
+  color: #94a3b8;
+  text-decoration: line-through;
 }
 
-.badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
+.product-description {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-.bg-success {
-  background-color: #10b981 !important;
-  color: #ffffff;
+.section-heading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.text-primary {
-  color: #3b82f6 !important;
+.description-text {
+  color: #64748b;
+  line-height: 1.7;
+  font-size: 1.1rem;
 }
 
-.text-gray {
-  color: #6b7280 !important;
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-.text-dark {
-  color: #1a1a1a !important;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
+.spec-item {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: #f8fafc;
   border-radius: 8px;
-  font-size: 0.95rem;
+}
+
+.spec-label {
+  font-size: 0.9rem;
+  color: #64748b;
   font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.spec-value {
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.product-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-add-to-cart {
+  width: 100%;
+  max-width: 300px;
+  /* Limits width for better proportionality */
+  padding: 1.25rem 2rem;
+  /* Adjusted padding for better spacing */
+  font-size: 1.1rem;
+  font-weight: 600;
+  /* Bolder text for emphasis */
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(to right, #667eea, #764ba2);
+  /* Requested gradient */
   transition: all 0.3s ease;
+  /* Smooth transition for all properties */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  /* Subtle shadow for depth */
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
-  border: none;
+.btn-add-to-cart:hover {
+  background: linear-gradient(to right, #5a71d8, #6a41a0);
+  /* Slightly darker gradient on hover */
+  transform: translateY(-3px);
+  /* Enhanced lift effect */
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  /* Stronger shadow on hover */
 }
 
-.btn-primary:hover {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+.btn-add-to-cart:active {
+  transform: translateY(0);
+  /* Press-down effect on click */
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  /* Reduced shadow on click */
+  transition: all 0.1s ease;
+  /* Faster transition for click */
 }
 
-.btn-primary:focus {
+.btn-add-to-cart:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3);
+  /* Focus ring for accessibility */
 }
 
-.btn-secondary {
-  background: linear-gradient(135deg, #6b7280, #4b5563);
-  color: #ffffff;
-  border: none;
+.btn-add-to-cart i {
+  font-size: 1.2rem;
+  /* Slightly larger icon */
+  transition: transform 0.3s ease;
+  /* Smooth icon animation */
 }
 
-.btn-secondary:hover {
-  background: linear-gradient(135deg, #4b5563, #374151);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+.btn-add-to-cart:hover i {
+  transform: scale(1.1);
+  /* Slight icon enlargement on hover */
 }
 
-.btn-secondary:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.3);
-}
-
-/* Responsive Design */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .container {
-    padding: 2rem 1rem;
-  }
-
-  .product-header h1 {
-    font-size: 2rem;
-  }
-
-  .product-header p {
+  .btn-add-to-cart {
+    padding: 1rem 1.5rem;
     font-size: 1rem;
+    max-width: 250px;
   }
 
-  .card-body {
-    padding: 1.5rem;
-  }
-
-  .card-title {
-    font-size: 1.5rem;
-  }
-
-  .product-details dt,
-  .product-details dd {
-    font-size: 0.9rem;
-  }
-
-  .product-image {
-    margin-bottom: 1rem;
-  }
-
-  .btn {
-    width: 100%;
-    text-align: center;
+  .btn-add-to-cart i {
+    font-size: 1.1rem;
   }
 }
 
 @media (max-width: 576px) {
-  .product-header {
-    text-align: center;
+  .btn-add-to-cart {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-image {
+    height: 300px;
   }
 
-  .product-header .d-flex {
-    flex-direction: column;
-    align-items: center;
+  .product-title {
+    font-size: 1.75rem;
   }
 
-  .product-details dt {
-    margin-bottom: 0.5rem;
+  .current-price {
+    font-size: 1.5rem;
   }
 
-  .product-details dd {
-    margin-bottom: 1rem;
+  .original-price {
+    font-size: 1rem;
+  }
+
+  .spec-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 2rem 1rem;
+  }
+
+  .product-image {
+    height: 250px;
+  }
+
+  .product-title {
+    font-size: 1.5rem;
+  }
+
+  .section-heading {
+    font-size: 1.25rem;
+  }
+
+  .description-text {
+    font-size: 1rem;
   }
 }
 </style>

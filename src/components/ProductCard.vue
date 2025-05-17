@@ -3,23 +3,34 @@
     <div class="card" @click="viewProduct">
       <div class="product-badge" v-if="product.onSale">Sale</div>
       <div class="product-image">
-        <img :src="product.image || '/images/placeholder.jpg'" :alt="product.name || 'Product image'" />
+        <img :src="product.image || '/images/placeholder.jpg'" :alt="product.name" />
         <button class="quick-view" @click.stop="viewProduct" aria-label="Quick view product">
           Quick View
         </button>
       </div>
       <div class="product-details">
-        <h3 class="product-title">{{ product.name || 'Unnamed Product' }}</h3>
+        <h3 class="product-title">{{ product.name }}</h3>
         <div class="price-container">
-          <span class="current-price">${{ product.price.toFixed(2) }}</span>
-          <span class="original-price" v-if="product.originalPrice && product.originalPrice > product.price">
-            ${{ product.originalPrice.toFixed(2) }}
+          <span class="price">
+            {{ product.price !== undefined && product.price !== null && !isNaN(Number(product.price))
+                ? `$${Number(product.price).toFixed(2)}`
+                : 'N/A'
+            }}
+          </span>
+          <span class="original-price" v-if="product.onSale && formattedOriginalPrice">
+            {{ formattedOriginalPrice }}
           </span>
         </div>
-        <p class="product-category">{{ product.category }}</p>
+        <p class="product-category">{{ formattedCategory }}</p>
         <div class="product-actions">
-          <button class="add-to-cart" @click.stop="addToCart" aria-label="Add product to cart">
-            <i class="bi bi-cart-plus me-2"></i> Add to Cart
+          <button 
+            class="add-to-cart" 
+            @click.stop="addToCart"
+            :disabled="product.stock <= 0"
+            aria-label="Add product to cart"
+          >
+            <i class="bi bi-cart-plus me-2"></i>
+            {{ product.stock > 0 ? 'Add to Cart' : 'Out of Stock' }}
           </button>
         </div>
       </div>
@@ -28,6 +39,8 @@
 </template>
 
 <script>
+import ProductServices from '@/services/ProductServices';
+
 export default {
   name: "ProductCard",
   props: {
@@ -36,33 +49,58 @@ export default {
       required: true,
     },
   },
-  methods: {
-    viewProduct() {
-      const productType = this.product.category;
-      if (!this.product.id || !productType) {
-        console.error("Invalid product data:", this.product);
-        return;
-      }
-      this.$router.push({
-        path: `/shop/product/${this.product.id}`,
-        query: { type: productType },
-      });
+  computed: {
+    formattedCategory() {
+      return this.product.category?.charAt(0).toUpperCase() +
+             this.product.category?.slice(1) || '';
     },
-    addToCart() {
-      console.log("Adding to cart:", this.product);
-      alert(`${this.product.name} added to cart!`);
-    },
+    formattedOriginalPrice() {
+      return (this.product.originalPrice !== undefined && this.product.originalPrice !== null && !isNaN(Number(this.product.originalPrice)))
+        ? `$${Number(this.product.originalPrice).toFixed(2)}`
+        : '';
+    }
   },
+  methods: {
+    async viewProduct() {
+      try {
+        const fullProduct = await ProductServices.getProductById(this.product.id);
+        this.$router.push({
+          path: `/shop/product/${fullProduct.id}`,
+          query: { 
+            type: fullProduct.category,
+            from: this.$route.fullPath 
+          }
+        });
+      } catch (error) {
+        console.error("Error viewing product:", error);
+        this.$toast.error('Failed to load product details');
+      }
+    },
+    async addToCart() {
+      try {
+        await this.$store.dispatch('cart/addToCart', {
+          productId: this.product.id,
+          quantity: 1
+        });
+        this.$toast.success(`${this.product.name} added to cart!`, {
+          position: "top-right",
+          timeout: 3000
+        });
+      } catch (error) {
+        this.$toast.error('Failed to add product to cart');
+      }
+    }
+  }
 };
 </script>
 
 <style scoped>
 .product-card {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .card {
-  background: #f5f5f5;
+  background: #ffffff;
   border: none;
   border-radius: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
@@ -159,7 +197,7 @@ export default {
   margin: 0.75rem 0;
 }
 
-.current-price {
+.price {
   font-size: 1.3rem;
   font-weight: 600;
   color: #3b82f6;
@@ -223,7 +261,7 @@ export default {
     font-size: 1.15rem;
   }
 
-  .current-price {
+  .price {
     font-size: 1.2rem;
   }
 

@@ -1,6 +1,6 @@
 <template>
   <div class="shop-display">
-    <!-- Shop Hero -->
+    <!-- Shop Hero Section (same as before) -->
     <section class="shop-hero">
       <div class="container">
         <h1 class="display-4 fw-bold text-white">PowerFit Shop</h1>
@@ -14,82 +14,143 @@
     <!-- Shop Content -->
     <section class="shop-main">
       <div class="container">
-        <!-- Filters -->
-        <div class="shop-controls mb-5">
-          <div class="categories">
-            <button v-for="category in categories" :key="category" class="category-filter"
-              :class="{ active: selectedCategory === category }" @click="navigateToCategory(category)"
-              :aria-pressed="selectedCategory === category">
-              {{ category }}
-            </button>
+        <!-- Loading State -->
+        <div v-if="loading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
           </div>
-          <div class="sorting">
-            <select class="sort-select" v-model="sortOption" @change="sortProducts" aria-label="Sort products">
-              <option value="low-high">Price: Low to High</option>
-              <option value="high-low">Price: High to Low</option>
-              <option value="newest">Newest First</option>
-              <option value="best-selling">Best Selling</option>
-            </select>
-          </div>
+          <p class="mt-3 text-muted">Loading products...</p>
         </div>
 
-        <!-- Product Grid -->
-        <div class="product-grid">
-          <ProductCard v-for="product in filteredProducts" :key="product.id" :product="product" />
+        <!-- Error State -->
+        <div v-else-if="error" class="alert alert-danger text-center">
+          {{ error }}
         </div>
-        <p v-if="!filteredProducts.length" class="text-gray text-center mt-5 fs-5">
-          No products found in this category.
-        </p>
+
+        <!-- Content -->
+        <template v-else>
+          <!-- Filters -->
+          <div class="shop-controls mb-5">
+            <div class="categories">
+              <button
+                v-for="category in categories"
+                :key="category"
+                class="category-filter"
+                :class="{ active: selectedCategory === category }"
+                @click="navigateToCategory(category)"
+                :aria-pressed="selectedCategory === category"
+              >
+                {{ category }}
+              </button>
+            </div>
+            <div class="sorting">
+              <select
+                class="sort-select"
+                v-model="sortOption"
+                @change="sortProducts"
+                aria-label="Sort products"
+              >
+                <option value="low-high">Price: Low to High</option>
+                <option value="high-low">Price: High to Low</option>
+                <option value="newest">Newest First</option>
+                <option value="best-selling">Best Selling</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Product Grid -->
+          <div class="product-grid">
+            <ProductCard v-for="product in filteredProducts" :key="product.id" :product="product" />
+          </div>
+
+          <!-- No Products Found -->
+          <p v-if="!filteredProducts.length" class="text-gray text-center mt-5 fs-5">
+            No products found in this category.
+          </p>
+        </template>
       </div>
     </section>
   </div>
 </template>
 
 <script>
+import ProductServices from '@/services/ProductServices';
 import ProductCard from './ProductCard.vue';
 
 export default {
   name: 'ShopDisplay',
-  components: {
-    ProductCard,
-  },
+  components: { ProductCard },
   data() {
     return {
-      products: [
-        { id: 1, name: 'Gold Standard Whey', price: 49.99, category: 'Supplements', flavor: 'Chocolate', weight: 1.5, form: 'Powder', originalPrice: 59.99, onSale: true, image: '/images/protein.jpg' },
-        { id: 2, name: 'Resistance Bands', price: 19.99, category: 'Accessories', material: 'Rubber', brand: 'FitPro', size: 'Medium', weight: 0.2, originalPrice: 24.99, onSale: true, image: '/images/bands.jpg' },
-        { id: 3, name: 'Gym T-Shirt', price: 24.99, category: 'Clothes', size: 'M', color: 'Black', gender: 'Unisex', material: 'Cotton', originalPrice: 29.99, onSale: false, image: '/images/tshirt.jpg' },
-        { id: 4, name: 'Creatine', price: 29.99, category: 'Supplements', flavor: 'Unflavored', weight: 0.5, form: 'Powder', originalPrice: 34.99, onSale: true, image: '/images/creatine.jpg' },
-        { id: 5, name: 'Water Bottle', price: 12.99, category: 'Accessories', material: 'Plastic', brand: 'Hydro', size: 'Large', weight: 0.3, originalPrice: 15.99, onSale: true, image: '/images/bottle.jpg' }
-      ],
+      loading: true,
+      error: null,
+      products: [],
       sortOption: 'low-high',
-      categories: ['All', 'Supplements', 'Clothes', 'Accessories']
+      categories: ['All']
     };
   },
   computed: {
     selectedCategory() {
+      // Always compare in lowercase
       const category = this.$route.params.category?.toLowerCase();
-      return this.categories.find(c => c.toLowerCase() === category) || 'All';
+      return (
+        this.categories.find(c => c.toLowerCase() === category) ||
+        'All'
+      );
     },
     filteredProducts() {
       let filtered = this.selectedCategory === 'All'
         ? this.products
         : this.products.filter(product => product.category === this.selectedCategory);
 
+      // Sorting logic
       if (this.sortOption === 'low-high') {
-        filtered = filtered.slice().sort((a, b) => a.price - b.price);
+        filtered = filtered.slice().sort((a, b) => Number(a.price) - Number(b.price));
       } else if (this.sortOption === 'high-low') {
-        filtered = filtered.slice().sort((a, b) => b.price - a.price);
+        filtered = filtered.slice().sort((a, b) => Number(b.price) - Number(a.price));
       } else if (this.sortOption === 'newest') {
         filtered = filtered.slice().sort((a, b) => (b.id || 0) - (a.id || 0));
       } else if (this.sortOption === 'best-selling') {
-        filtered = filtered.slice();
+        // If you have a sales field, sort by it; otherwise, leave as is
+        filtered = [...filtered];
       }
-
       return filtered;
     }
   },
+  async created() {
+    try {
+      const response = await ProductServices.getAllProducts();
+      // Extract unique categories from products
+      const categories = [...new Set(response.map(p => p.category).filter(Boolean))];
+      this.categories = ['All', ...categories];
+      this.products = response.map(product => ({
+        ...product,
+        onSale: product.originalPrice && product.originalPrice > product.price
+      }));
+    } catch (error) {
+      this.error = error.message || 'Failed to load products';
+    } finally {
+      this.loading = false;
+    }
+  },
   methods: {
+    async fetchProducts() {
+      try {
+        this.loading = true;
+        this.error = null;
+        const response = await ProductServices.getAllProducts();
+        const categories = [...new Set(response.map(p => p.category).filter(Boolean))];
+        this.categories = ['All', ...categories];
+        this.products = response.map(product => ({
+          ...product,
+          onSale: product.originalPrice && product.originalPrice > product.price
+        }));
+      } catch (err) {
+        this.error = err.message || 'Failed to load products';
+      } finally {
+        this.loading = false;
+      }
+    },
     navigateToCategory(category) {
       const routeCategory = category.toLowerCase();
       if (this.$route.params.category !== routeCategory) {
@@ -104,7 +165,10 @@ export default {
     '$route.params.category': {
       immediate: true,
       handler(newCategory) {
-        if (newCategory && !this.categories.map(c => c.toLowerCase()).includes(newCategory.toLowerCase())) {
+        if (
+          newCategory &&
+          !this.categories.map(c => c.toLowerCase()).includes(newCategory.toLowerCase())
+        ) {
           this.$router.replace('/shop/all');
         }
       }
@@ -115,7 +179,7 @@ export default {
 
 <style scoped>
 .shop-display {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #f8fafc;
   min-height: 100vh;
   margin-top: 100px;
@@ -141,13 +205,13 @@ export default {
 }
 
 .shop-hero::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" fill-opacity="1" d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,138.7C672,128,768,160,864,170.7C960,181,1056,171,1152,149.3C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'><path fill='rgba(255,255,255,0.1)' fill-opacity='1' d='M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,138.7C672,128,768,160,864,170.7C960,181,1056,171,1152,149.3C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'></path></svg>");
   background-size: cover;
   opacity: 0.3;
 }
@@ -268,6 +332,12 @@ export default {
 
 .text-gray {
   color: #6b7280;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.4rem;
 }
 
 /* Responsive Design */
