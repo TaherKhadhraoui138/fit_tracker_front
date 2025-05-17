@@ -53,7 +53,7 @@
                                         </span>
                                         <input :type="showPassword ? 'text' : 'password'"
                                             class="form-control border-start-0 pe-5" id="password"
-                                            placeholder="Confirm password" v-model="password" required>
+                                            placeholder="Confirm password" v-model="confirmPassword" required>
                                         <span
                                             class="position-absolute end-0 top-50 translate-middle-y me-3 cursor-pointer"
                                             @click="showPassword = !showPassword">
@@ -86,7 +86,7 @@
 </template>
 
 <script>
-
+import AuthServices from "@/services/AuthServices.js";
 
 export default {
     name: 'RegisterPage',
@@ -104,10 +104,20 @@ export default {
         async handleRegister() {
             this.loading = true;
             try {
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                if (this.password !== this.confirmPassword) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+                await AuthServices.register({
+                    name: this.username,
+                    email: this.email,
+                    password: this.password,
+                    password_confirmation: this.confirmPassword
+                });
                 alert('Registration successful!');
+                this.$router.push({ name: "login" }); // Redirect to login page
             } catch (error) {
-                alert('Registration failed: ' + error.message);
+                alert('Registration failed: ' + (error.response?.data?.message || error.message));
             } finally {
                 this.loading = false;
             }
@@ -119,7 +129,7 @@ export default {
 <style scoped>
 .register-section {
     position: relative;
-    margin-top: var(--Header-height, 80px);
+    margin-top: var(--Header-height,150px);
 
     margin-bottom: 50px;
 }

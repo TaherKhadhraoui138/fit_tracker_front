@@ -3,23 +3,34 @@
     <div class="card" @click="viewProduct">
       <div class="product-badge" v-if="product.onSale">Sale</div>
       <div class="product-image">
-        <img :src="product.image || '/images/placeholder.jpg'" :alt="product.name || 'Product image'" />
+        <img :src="product.image || '/images/placeholder.jpg'" :alt="product.name" />
         <button class="quick-view" @click.stop="viewProduct" aria-label="Quick view product">
           Quick View
         </button>
       </div>
       <div class="product-details">
-        <h3 class="product-title">{{ product.name || 'Unnamed Product' }}</h3>
+        <h3 class="product-title">{{ product.name }}</h3>
         <div class="price-container">
-          <span class="current-price">${{ product.price.toFixed(2) }}</span>
-          <span class="original-price" v-if="product.originalPrice && product.originalPrice > product.price">
-            ${{ product.originalPrice.toFixed(2) }}
+          <span class="price">
+            {{ product.price !== undefined && product.price !== null && !isNaN(Number(product.price))
+                ? `$${Number(product.price).toFixed(2)}`
+                : 'N/A'
+            }}
+          </span>
+          <span class="original-price" v-if="product.onSale && formattedOriginalPrice">
+            {{ formattedOriginalPrice }}
           </span>
         </div>
-        <p class="product-category">{{ product.category }}</p>
+        <p class="product-category">{{ formattedCategory }}</p>
         <div class="product-actions">
-          <button class="add-to-cart" @click.stop="addToCart" aria-label="Add product to cart">
-            <i class="bi bi-cart-plus me-2"></i> Add to Cart
+          <button 
+            class="add-to-cart" 
+            @click.stop="addToCart"
+            :disabled="product.stock <= 0"
+            aria-label="Add product to cart"
+          >
+            <i class="bi bi-cart-plus me-2"></i>
+            {{ product.stock > 0 ? 'Add to Cart' : 'Out of Stock' }}
           </button>
         </div>
       </div>
@@ -28,6 +39,8 @@
 </template>
 
 <script>
+import ProductServices from '@/services/ProductServices';
+
 export default {
   name: "ProductCard",
   props: {
@@ -36,78 +49,101 @@ export default {
       required: true,
     },
   },
-  methods: {
-    viewProduct() {
-      const productType = this.product.category;
-      if (!this.product.id || !productType) {
-        console.error("Invalid product data:", this.product);
-        return;
-      }
-      this.$router.push({
-        path: `/shop/product/${this.product.id}`,
-        query: { type: productType },
-      });
+  computed: {
+    formattedCategory() {
+      return this.product.category?.charAt(0).toUpperCase() +
+             this.product.category?.slice(1) || '';
     },
-    addToCart() {
-      console.log("Adding to cart:", this.product);
-      // Placeholder: Emit or API call
-      alert(`${this.product.name} added to cart!`);
-    },
+    formattedOriginalPrice() {
+      return (this.product.originalPrice !== undefined && this.product.originalPrice !== null && !isNaN(Number(this.product.originalPrice)))
+        ? `$${Number(this.product.originalPrice).toFixed(2)}`
+        : '';
+    }
   },
+  methods: {
+    async viewProduct() {
+      try {
+        const fullProduct = await ProductServices.getProductById(this.product.id);
+        this.$router.push({
+          path: `/shop/product/${fullProduct.id}`,
+          query: { 
+            type: fullProduct.category,
+            from: this.$route.fullPath 
+          }
+        });
+      } catch (error) {
+        console.error("Error viewing product:", error);
+        this.$toast.error('Failed to load product details');
+      }
+    },
+    async addToCart() {
+      try {
+        await this.$store.dispatch('cart/addToCart', {
+          productId: this.product.id,
+          quantity: 1
+        });
+        this.$toast.success(`${this.product.name} added to cart!`, {
+          position: "top-right",
+          timeout: 3000
+        });
+      } catch (error) {
+        this.$toast.error('Failed to add product to cart');
+      }
+    }
+  }
 };
 </script>
 
 <style scoped>
 .product-card {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.5s ease, box-shadow 0.5s ease;
   cursor: pointer;
 }
 
 .card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .product-badge {
   position: absolute;
   top: 16px;
   left: 16px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff;
+  background: linear-gradient(135deg, #6ee7b7, #34d399);
+  color: #1a1a1a;
   padding: 0.5rem 1.2rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
   z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .product-image {
   position: relative;
-  height: 280px;
+  height: 260px;
   overflow: hidden;
-  background: #f1f5f9;
+  background: #f8fafc;
 }
 
 .product-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease, opacity 0.4s ease;
+  transition: transform 0.6s ease, opacity 0.6s ease;
 }
 
 .card:hover .product-image img {
-  transform: scale(1.08);
-  opacity: 0.9;
+  transform: scale(1.05);
+  opacity: 0.95;
 }
 
 .quick-view {
@@ -115,39 +151,38 @@ export default {
   bottom: -60px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 0.8rem 1.8rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 10px;
-  background: rgba(59, 130, 246, 0.95);
-  color: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 600;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #3b82f6;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.5s ease;
 }
 
 .card:hover .quick-view {
-  bottom: 20px;
+  bottom: 16px;
 }
 
 .quick-view:hover {
-  background: #2563eb;
+  background: #ffffff;
   transform: translateX(-50%) translateY(-2px);
 }
 
 .quick-view:focus {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .product-details {
-  padding: 1.75rem;
+  padding: 1.5rem;
 }
 
 .product-title {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 0.75rem;
   overflow: hidden;
@@ -157,95 +192,95 @@ export default {
 
 .price-container {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
   margin: 0.75rem 0;
 }
 
-.current-price {
-  font-size: 1.4rem;
+.price {
+  font-size: 1.3rem;
   font-weight: 600;
   color: #3b82f6;
 }
 
 .original-price {
-  font-size: 1.1rem;
-  color: #6b7280;
+  font-size: 1rem;
+  color: #9ca3af;
   text-decoration: line-through;
 }
 
 .product-category {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #6b7280;
   margin-bottom: 1rem;
 }
 
 .product-actions {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
 }
 
 .add-to-cart {
   width: 100%;
-  padding: 0.9rem;
+  padding: 0.8rem;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-radius: 12px;
+  background: linear-gradient(to right, #667eea, #764ba2);
   color: #ffffff;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  transition: all 0.3s ease;
+  gap: 0.5rem;
+  transition: all 0.5s ease;
 }
 
 .add-to-cart:hover {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .add-to-cart:focus {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .product-image {
-    height: 240px;
+    height: 220px;
   }
 
   .product-details {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
 
   .product-title {
+    font-size: 1.15rem;
+  }
+
+  .price {
     font-size: 1.2rem;
   }
 
-  .current-price {
-    font-size: 1.3rem;
-  }
-
   .original-price {
-    font-size: 1rem;
-  }
-
-  .product-category {
-    font-size: 0.9rem;
-  }
-
-  .add-to-cart {
-    padding: 0.8rem;
     font-size: 0.95rem;
   }
 
-  .quick-view {
-    padding: 0.7rem 1.5rem;
+  .product-category {
+    font-size: 0.85rem;
+  }
+
+  .add-to-cart {
+    padding: 0.7rem;
     font-size: 0.9rem;
+  }
+
+  .quick-view {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.85rem;
   }
 }
 
@@ -259,7 +294,7 @@ export default {
   }
 
   .product-details {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 }
 </style>

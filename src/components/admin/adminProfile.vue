@@ -1,177 +1,162 @@
 <template>
-  <div class="container py-5">
-    <header class="admin-header mb-5">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <div>
-          <h1 class="display-4 fw-bold text-dark">Admin Profile</h1>
-          <p class="text-secondary fs-5">View and manage your profile details</p>
-        </div>
-        <button class="btn btn-secondary" @click="goBack">
-          <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
-        </button>
-      </div>
-    </header>
-
-    <div class="row justify-content-center">
-      <div class="col-lg-8">
-        <div class="card h-100">
-          <div class="card-body">
-            <h3 class="card-title fw-semibold mb-4">Profile Details</h3>
-
-            <!-- Read-only View -->
-            <div v-if="!isEditing" class="profile-details">
-              <dl class="row g-3">
-                <dt class="col-sm-4">Full Name</dt>
-                <dd class="col-sm-8">{{ profile.name || 'N/A' }}</dd>
-                <dt class="col-sm-4">Email Address</dt>
-                <dd class="col-sm-8">{{ profile.email || 'N/A' }}</dd>
-                <dt class="col-sm-4">Phone Number</dt>
-                <dd class="col-sm-8">{{ profile.phone || 'N/A' }}</dd>
-              </dl>
-              <div class="d-flex gap-2 mt-4">
-                <button class="btn btn-primary" @click="startEditing">Edit Profile</button>
-                <button class="btn btn-danger" @click="showDeleteModal = true">Delete Profile</button>
-              </div>
-            </div>
-
-            <!-- Edit Form -->
-            <form v-else @submit.prevent="saveProfile">
-              <div class="mb-4">
-                <label for="name" class="form-label fw-semibold">Full Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  class="form-control"
-                  v-model.trim="form.name"
-                  :class="{ 'is-invalid': errors.name }"
-                  required
-                  aria-describedby="nameError"
-                />
-                <div v-if="errors.name" id="nameError" class="invalid-feedback">
-                  {{ errors.name }}
-                </div>
-              </div>
-
-              <div class="mb-4">
-                <label for="email" class="form-label fw-semibold">Email Address</label>
-                <input
-                  type="email"
-                  id="email"
-                  class="form-control"
-                  v-model.trim="form.email"
-                  :class="{ 'is-invalid': errors.email }"
-                  required
-                  aria-describedby="emailError"
-                />
-                <div v-if="errors.email" id="emailError" class="invalid-feedback">
-                  {{ errors.email }}
-                </div>
-              </div>
-
-              <div class="mb-4">
-                <label for="phone" class="form-label fw-semibold">Phone Number</label>
-                <input
-                  type="tel"
-                  id="phone"
-                  class="form-control"
-                  v-model.trim="form.phone"
-                  :class="{ 'is-invalid': errors.phone }"
-                  aria-describedby="phoneError"
-                />
-                <div v-if="errors.phone" id="phoneError" class="invalid-feedback">
-                  {{ errors.phone }}
-                </div>
-              </div>
-
-              <div class="mb-4">
-                <label for="password" class="form-label fw-semibold">New Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  class="form-control"
-                  v-model="form.password"
-                  :class="{ 'is-invalid': errors.password }"
-                  aria-describedby="passwordError"
-                />
-                <div v-if="errors.password" id="passwordError" class="invalid-feedback">
-                  {{ errors.password }}
-                </div>
-              </div>
-
-              <div class="mb-4">
-                <label for="confirmPassword" class="form-label fw-semibold">Confirm Password</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  class="form-control"
-                  v-model="form.confirmPassword"
-                  :class="{ 'is-invalid': errors.confirmPassword }"
-                  aria-describedby="confirmPasswordError"
-                />
-                <div v-if="errors.confirmPassword" id="confirmPasswordError" class="invalid-feedback">
-                  {{ errors.confirmPassword }}
-                </div>
-              </div>
-
-              <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <button type="button" class="btn btn-outline-secondary" @click="cancelEditing">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+  <div v-if="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
     </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="modal fade show" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title fw-semibold">Confirm Delete</h5>
-            <button type="button" class="btn-close" @click="showDeleteModal = false" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p class="text-secondary">Are you sure you want to delete your profile? This action cannot be undone.</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" @click="showDeleteModal = false">Cancel</button>
-            <button type="button" class="btn btn-danger" @click="deleteProfile">Delete Profile</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="showDeleteModal" class="modal-backdrop fade show"></div>
   </div>
+
+  <div v-else>
+    <div class="container py-5">
+      <header class="admin-header mb-5">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            <h1 class="display-4 fw-bold text-dark">Admin Profile</h1>
+            <p class="text-secondary fs-5">View and manage your profile details</p>
+          </div>
+          <button class="btn btn-secondary" @click="goBack">
+            <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
+          </button>
+        </div>
+      </header>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-body">
+              <h3 class="card-title fw-semibold mb-4">Profile Details</h3>
+
+              <!-- Read-only View -->
+              <div v-if="!isEditing" class="profile-details">
+                <dl class="row g-3">
+                  <dt class="col-sm-4">Full Name</dt>
+                  <dd class="col-sm-8">{{ profile.name || 'N/A' }}</dd>
+                  <dt class="col-sm-4">Email Address</dt>
+                  <dd class="col-sm-8">{{ profile.email || 'N/A' }}</dd>
+                </dl>
+                <div class="d-flex gap-2 mt-4">
+                  <button class="btn btn-primary" @click="startEditing">Edit Profile</button>
+                  <button class="btn btn-danger" @click="showDeleteModal = true">Delete Profile</button>
+                </div>
+              </div>
+
+              <!-- Edit Form -->
+              <form v-else @submit.prevent="saveProfile">
+                <div class="mb-4">
+                  <label for="name" class="form-label fw-semibold">Full Name</label>
+                  <input type="text" id="name" class="form-control" v-model.trim="form.name"
+                    :class="{ 'is-invalid': errors.name }" required aria-describedby="nameError" />
+                  <div v-if="errors.name" id="nameError" class="invalid-feedback">
+                    {{ errors.name }}
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label for="email" class="form-label fw-semibold">Email Address</label>
+                  <input type="email" id="email" class="form-control" v-model.trim="form.email"
+                    :class="{ 'is-invalid': errors.email }" required aria-describedby="emailError" />
+                  <div v-if="errors.email" id="emailError" class="invalid-feedback">
+                    {{ errors.email }}
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label for="password" class="form-label fw-semibold">New Password</label>
+                  <input type="password" id="password" class="form-control" v-model="form.password"
+                    :class="{ 'is-invalid': errors.password }" aria-describedby="passwordError" />
+                  <div v-if="errors.password" id="passwordError" class="invalid-feedback">
+                    {{ errors.password }}
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label for="confirmPassword" class="form-label fw-semibold">Confirm Password</label>
+                  <input type="password" id="confirmPassword" class="form-control" v-model="form.confirmPassword"
+                    :class="{ 'is-invalid': errors.confirmPassword }" aria-describedby="confirmPasswordError" />
+                  <div v-if="errors.confirmPassword" id="confirmPasswordError" class="invalid-feedback">
+                    {{ errors.confirmPassword }}
+                  </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary">Save Changes</button>
+                  <button type="button" class="btn btn-outline-secondary" @click="cancelEditing">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div v-if="showDeleteModal" class="modal fade show" tabindex="-1" style="display: block;" aria-modal="true"
+        role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title fw-semibold">Confirm Delete</h5>
+              <button type="button" class="btn-close" @click="showDeleteModal = false" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-secondary">Are you sure you want to delete your profile? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" @click="showDeleteModal = false">Cancel</button>
+              <button type="button" class="btn btn-danger" @click="deleteProfile">Delete Profile</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-if="showDeleteModal" class="modal-backdrop fade show"></div>
+    </div>
+  </div>
+
+
+
 </template>
 
 <script>
+import UserServices from "@/services/UserServices.js";
+import AuthServices from "@/services/AuthServices.js";
+
 export default {
   name: 'AdminProfile',
   data() {
     return {
       profile: {
-        name: 'Admin User',
-        email: 'admin@example.com',
-        phone: ''
+        name: '',
+        email: ''
       },
       form: {
         name: '',
         email: '',
-        phone: '',
         password: '',
         confirmPassword: ''
       },
       errors: {
         name: '',
         email: '',
-        phone: '',
         password: '',
         confirmPassword: ''
       },
       isEditing: false,
-      showDeleteModal: false
+      showDeleteModal: false,
+      isLoading: false
     };
+  },
+  async created() {
+    try {
+      const user = AuthServices.getUser();
+      if (!user) throw new Error("User not logged in");
+
+      const data = await UserServices.getProfile();
+      this.profile = {
+        name: data.name || data.full_name,
+        email: data.email
+      };
+      this.form = { ...this.profile, password: '', confirmPassword: '' };
+    } catch (error) {
+      alert('Failed to load profile: ' + error.message);
+    }
   },
   methods: {
     startEditing() {
@@ -180,10 +165,10 @@ export default {
     },
     cancelEditing() {
       this.isEditing = false;
-      this.errors = { name: '', email: '', phone: '', password: '', confirmPassword: '' };
+      this.errors = { name: '', email: '', password: '', confirmPassword: '' };
     },
     validateForm() {
-      this.errors = { name: '', email: '', phone: '', password: '', confirmPassword: '' };
+      this.errors = { name: '', email: '', password: '', confirmPassword: '' };
       let isValid = true;
 
       if (!this.form.name) {
@@ -199,11 +184,6 @@ export default {
         isValid = false;
       }
 
-      if (this.form.phone && !/^\+?\d{10,15}$/.test(this.form.phone)) {
-        this.errors.phone = 'Please enter a valid phone number (10-15 digits).';
-        isValid = false;
-      }
-
       if (this.form.password && this.form.password.length < 8) {
         this.errors.password = 'Password must be at least 8 characters long.';
         isValid = false;
@@ -216,33 +196,47 @@ export default {
 
       return isValid;
     },
-    saveProfile() {
+    async saveProfile() {
       if (this.validateForm()) {
-        console.log('Saving profile:', this.form);
-        // Placeholder: Implement API call to save profile
-        // Example: await axios.put('/api/admin/profile', this.form);
-        this.profile = {
-          name: this.form.name,
-          email: this.form.email,
-          phone: this.form.phone
-        };
-        this.isEditing = false;
-        alert('Profile saved successfully!');
-        this.form.password = '';
-        this.form.confirmPassword = '';
+        try {
+          const payload = {
+            name: this.form.name,
+            email: this.form.email,
+            password: this.form.password,
+            password_confirmation: this.form.confirmPassword // Match the confirmed rule
+          };
+
+          const response = await UserServices.updateProfile(payload);
+
+          // Update local state with API response
+          this.profile = {
+            name: response.name,
+            email: response.email
+          };
+
+          // Reset form
+          this.isEditing = false;
+          this.form.password = '';
+          this.form.confirmPassword = '';
+
+          alert('Profile updated successfully!');
+        } catch (error) {
+          alert('Failed to save profile: ' + error.message);
+        }
       }
     },
-    deleteProfile() {
-      console.log('Deleting profile:', this.profile);
-      // Placeholder: Implement API call to delete profile
-      // Example: await axios.delete('/api/admin/profile');
-      alert('Profile deleted successfully!');""
-      this.showDeleteModal = false;
-      this.$router.push('/login'); // Redirect to login or other page
+    async deleteProfile() {
+      try {
+        await UserServices.deleteUser(this.profile.id);
+        alert('Profile deleted successfully!');
+        this.showDeleteModal = false;
+        this.$router.push('/login');
+      } catch (error) {
+        alert('Failed to delete profile: ' + error.message);
+      }
     },
-    
     goBack() {
-      this.$router.go(-1); // Navigate back to the previous page
+      this.$router.go(-1);
     },
   }
 };
@@ -256,6 +250,7 @@ export default {
   background-color: #f8fafc;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-top: var(--Header-height, 100px);
 }
 
 .admin-header h1 {
